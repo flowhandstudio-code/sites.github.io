@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ferroelettra, la ferramenta di Matera online</title>
+<meta name="description" content="Ferroelettra, ferramenta a Matera da oltre 30 anni: 26 reparti tra utensili, bulloneria, materiale elettrico e giardinaggio. Spedizione express tracciata in 1-2 giorni lavorativi.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<style>
+/* Palette da banco di ferramenta: cemento, acciaio zincato, il blu del marchio, il giallo dei cartellini prezzo */
+:root{
+  --cemento:#e9e8e4;
+  --bianco:#ffffff;
+  --inchiostro:#15181c;
+  --acciaio:#8d97a1;
+  --blu:#1f4e9c;
+  --blu-d:#173b77;
+  --giallo:#f2c230;
+  --soft:#5a6169;
+  --rule:rgba(21,24,28,.14);
+  --cond:"IBM Plex Sans Condensed",system-ui,sans-serif;
+  --sans:"IBM Plex Sans",system-ui,sans-serif;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--sans);font-size:16px;line-height:1.55;color:var(--inchiostro);background:var(--cemento)}
+img{display:block;max-width:100%}
+a{color:inherit}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:3px solid var(--blu);outline-offset:2px}
+.wrap{width:min(1240px,100% - 32px);margin-inline:auto}
+.num{font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:var(--cond);font-weight:700;line-height:1;letter-spacing:-.01em}
+
+/* ---------- barra e testata ---------- */
+.service{background:var(--inchiostro);color:#fff;font-size:14px;padding:8px 16px;text-align:center}
+.service a{color:var(--giallo);font-weight:600;text-decoration:none}
+.head{position:sticky;top:0;z-index:40;background:rgba(233,232,228,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--rule)}
+.head .wrap{display:flex;align-items:center;gap:22px;height:68px}
+.logo img{height:40px;width:auto}
+.nav{display:flex;gap:22px;list-style:none;margin-left:auto;font-size:15px;font-weight:500}
+.nav a{text-decoration:none;padding:6px 0;border-bottom:2px solid transparent}
+.nav a:hover{border-color:var(--blu)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:14px 20px;font-weight:600;text-decoration:none;border-radius:6px;border:1.5px solid transparent;transition:background .2s,color .2s}
+.btn-blu{background:var(--blu);color:#fff}
+.btn-blu:hover{background:var(--blu-d)}
+.btn-line{border-color:var(--inchiostro)}
+.btn-line:hover{background:var(--inchiostro);color:#fff}
+.head .btn{padding:10px 14px;font-size:15px}
+
+/* ---------- la vite: sezione bloccata guidata dallo scroll ---------- */
+.run{position:relative;height:420vh}
+.run-pin{position:sticky;top:0;height:100svh;overflow:hidden}
+#bolt3d{position:absolute;inset:0;width:100%;height:100%;display:block}
+.steps{position:absolute;left:max(16px,(100vw - 1240px)/2);top:50%;transform:translateY(-42%);width:min(520px,calc(100% - 32px));z-index:2}
+.step{position:absolute;left:0;top:0;width:100%;opacity:0;transform:translateY(18px);transition:opacity .55s var(--ease),transform .55s var(--ease);pointer-events:none}
+.step.on{opacity:1;transform:none;pointer-events:auto}
+.step h1{font-size:clamp(44px,6vw,86px);margin-bottom:18px}
+.step h2{font-size:clamp(34px,4.4vw,62px);margin-bottom:14px}
+.step p{font-size:18px;max-width:42ch;color:var(--soft)}
+.step .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.kpi{display:block;font-family:var(--cond);font-weight:700;font-size:clamp(64px,8vw,120px);line-height:.9;color:var(--blu)}
+/* righello a destra: la corsa del dado, in millimetri */
+.ruler{position:absolute;right:max(16px,(100vw - 1240px)/2);top:16%;bottom:16%;width:56px;z-index:2;
+  background:repeating-linear-gradient(to bottom,var(--inchiostro) 0 1px,transparent 1px 10px) right/12px 100% no-repeat,
+             repeating-linear-gradient(to bottom,var(--inchiostro) 0 1.5px,transparent 1.5px 50px) right/24px 100% no-repeat;opacity:.75}
+.ruler i{position:absolute;right:28px;top:0;transform:translateY(-50%);font-style:normal;font-family:var(--cond);font-weight:700;font-size:15px;background:var(--giallo);padding:2px 6px;border-radius:3px;white-space:nowrap}
+.ruler i::after{content:"";position:absolute;right:-6px;top:50%;transform:translateY(-50%);border:6px solid transparent;border-left-color:var(--giallo);border-right:0}
+.no3d{position:absolute;inset:0;display:grid;place-items:center;color:var(--soft)}
+
+/* ---------- reparti: la cassettiera ---------- */
+section{position:relative}
+.depts{padding:110px 0 90px;background:var(--bianco)}
+.sec-head{display:flex;justify-content:space-between;align-items:end;gap:24px;flex-wrap:wrap;margin-bottom:36px}
+.sec-head h2{font-size:clamp(36px,4.6vw,64px);max-width:16ch}
+.sec-head p{color:var(--soft);max-width:44ch}
+.cabinet{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;padding:14px;background:#2f3a46;border-radius:10px;perspective:900px;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.08),0 30px 60px -30px rgba(21,24,28,.6)}
+.drawer{position:relative;display:flex;flex-direction:column;justify-content:space-between;min-height:116px;padding:12px 12px 10px;border-radius:5px;text-decoration:none;
+  background:linear-gradient(180deg,#d8dde2,#c3cad1);box-shadow:inset 0 -3px 0 rgba(0,0,0,.12),0 2px 0 rgba(0,0,0,.25);
+  transform-style:preserve-3d;transition:transform .45s var(--ease),box-shadow .45s var(--ease)}
+.drawer:hover,.drawer:focus-visible{transform:translateZ(46px) translateY(-4px);box-shadow:inset 0 -3px 0 rgba(0,0,0,.12),0 22px 30px -12px rgba(0,0,0,.55)}
+.drawer .card{background:#fffdf4;border:1px solid rgba(0,0,0,.18);padding:6px 8px;font-family:var(--cond);font-weight:600;font-size:15px;line-height:1.15;min-height:52px}
+.drawer .card span{display:block;font-family:var(--sans);font-weight:500;font-size:12px;color:var(--soft);margin-top:4px}
+.drawer .pull{align-self:center;width:44%;height:10px;border-radius:6px;background:linear-gradient(180deg,#f4f6f8,#8d97a1);box-shadow:0 2px 2px rgba(0,0,0,.3);margin-top:10px}
+.drawer.big{grid-column:span 2}
+.drawer.big .card{font-size:19px}
+
+/* ---------- bestseller con cartellino ---------- */
+.best{padding:100px 0}
+.shelf{display:grid;grid-template-columns:repeat(5,1fr);gap:28px 18px}
+.item{display:flex;flex-direction:column}
+.item .ph{position:relative;aspect-ratio:1;background:#fff;border-radius:8px;display:grid;place-items:center;overflow:hidden;border:1px solid var(--rule)}
+.item .ph img{width:150px;height:150px;object-fit:contain;transition:transform .5s var(--ease)}
+.item:hover .ph img{transform:scale(1.06)}
+.item .ph img[data-failed]:not([data-shot]){visibility:hidden}
+.item .ph img[data-shot]{width:100%;height:100%;object-fit:cover}
+.tag{position:absolute;right:-6px;top:14px;background:var(--giallo);font-family:var(--cond);font-weight:700;font-size:22px;padding:4px 12px 4px 20px;
+  clip-path:polygon(12px 0,100% 0,100% 100%,12px 100%,0 50%);transform:rotate(4deg);transform-origin:right center;transition:transform .4s var(--ease)}
+.tag::before{content:"";position:absolute;left:8px;top:50%;width:6px;height:6px;border-radius:50%;background:#fff;transform:translateY(-50%)}
+.item:hover .tag{transform:rotate(-3deg)}
+.item h3{font-family:var(--sans);font-weight:500;font-size:15px;line-height:1.35;margin:12px 0 4px;flex:1}
+.item .vat{font-size:12px;color:var(--soft)}
+.item a.go{margin-top:8px;font-weight:600;font-size:14px;color:var(--blu)}
+
+/* ---------- marchi e servizio ---------- */
+.brands{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:56px}
+.brands img{width:100%;border-radius:8px;border:1px solid var(--rule)}
+.help{background:var(--inchiostro);color:#fff;padding:100px 0}
+.help-grid{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,5fr);gap:clamp(32px,6vw,96px);align-items:center}
+.help h2{font-size:clamp(38px,5vw,72px);margin-bottom:16px}
+.help p{color:rgba(255,255,255,.75);max-width:46ch}
+.phone{display:block;font-family:var(--cond);font-weight:700;font-size:clamp(48px,7vw,96px);line-height:1;text-decoration:none;margin:22px 0 10px;color:var(--giallo)}
+.facts{list-style:none;border-top:1px solid rgba(255,255,255,.2)}
+.facts li{padding:16px 0;border-bottom:1px solid rgba(255,255,255,.2);display:grid;grid-template-columns:44px 1fr;gap:14px;align-items:start}
+.facts svg{color:var(--giallo)}
+.facts b{display:block;font-family:var(--cond);font-size:22px}
+.facts span{color:rgba(255,255,255,.7);font-size:15px}
+footer{background:#0d0f12;color:rgba(255,255,255,.65);padding:40px 0;font-size:14px}
+footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+footer a{color:#fff}
+
+@media (max-width:1000px){
+  .nav{display:none}
+  .head .btn{margin-left:auto}
+  .cabinet{grid-template-columns:repeat(3,1fr)}
+  .shelf{grid-template-columns:repeat(2,1fr)}
+  .brands{grid-template-columns:1fr}
+  .help-grid{grid-template-columns:1fr}
+  .steps{top:auto;bottom:6vh;transform:none}
+  .step{top:auto;bottom:0}
+  .step p{font-size:16px;background:rgba(233,232,228,.85);padding:2px 0}
+  .ruler{display:none}
+}
+@media (max-width:520px){ .cabinet{grid-template-columns:repeat(2,1fr)} .drawer.big{grid-column:span 2} .head .long{display:none} }
+@media (prefers-reduced-motion:reduce){ *,*::before,*::after{transition-duration:.01ms!important} }
+</style>
+</head>
+<body>
+
+<p class="service">Servizio clienti: Tel. e WhatsApp <a href="tel:+390835334712">0835 334712</a>, dal lunedì al venerdì 8:00–13:00 e 16:00–20:00</p>
+
+<header class="head">
+  <div class="wrap">
+    <a class="logo" href="https://www.ferroelettra.it/" aria-label="Ferroelettra, sito attuale"><img src="https://www.ferroelettra.it/readycontent/images/Banner%20FERROELETTRA%202023%20472x110%20trasparente-2.png" alt="Ferroelettra" width="472" height="110"></a>
+    <ul class="nav">
+      <li><a href="#reparti">Reparti</a></li>
+      <li><a href="#bestseller">Più venduti</a></li>
+      <li><a href="#assistenza">Assistenza</a></li>
+    </ul>
+    <a class="btn btn-blu" href="https://wa.me/390835334712" target="_blank" rel="noopener"><span class="long">Scrivi su </span>WhatsApp</a>
+  </div>
+</header>
+
+<main>
+  <section class="run" id="vite" aria-label="Perché sceglierci">
+    <div class="run-pin">
+      <canvas id="bolt3d" aria-hidden="true"></canvas>
+      <div class="steps">
+        <div class="step on">
+          <h1>La ferramenta di Matera, aperta anche online.</h1>
+          <p>Utensili, bulloneria, materiale elettrico, giardinaggio e casalinghi: <b class="num" id="totArt">oltre 15.000</b> articoli in 26 reparti.</p>
+          <div class="actions">
+            <a class="btn btn-blu" href="#reparti">Sfoglia i reparti</a>
+            <a class="btn btn-line" href="https://wa.me/390835334712" target="_blank" rel="noopener">Chiedi un pezzo su WhatsApp</a>
+          </div>
+        </div>
+        <div class="step">
+          <span class="kpi">+30</span>
+          <h2>anni dietro al banco.</h2>
+          <p>Da via Giolitti, a Matera. Lo stesso banco, ora anche online.</p>
+        </div>
+        <div class="step">
+          <h2>Spedizione express tracciata in 1–2 giorni lavorativi.</h2>
+          <p>Per i pacchi oltre i 100 g. Puoi scegliere data e luogo del ritiro della consegna senza costi aggiuntivi.</p>
+        </div>
+        <div class="step">
+          <h2>Non trovi il pezzo giusto? Chiedi a noi.</h2>
+          <p>Assistenza prima e dopo l’acquisto, al telefono o su WhatsApp, dal lunedì al venerdì 8–13 e 16–20.</p>
+        </div>
+        <div class="step">
+          <h2>Stretto. Pagamenti sicuri e si parte.</h2>
+          <p>Scegli il reparto e trova quello che ti serve.</p>
+          <div class="actions"><a class="btn btn-blu" href="#reparti">Apri la cassettiera</a></div>
+        </div>
+      </div>
+      <div class="ruler" aria-hidden="true"><i id="mm">0 mm</i></div>
+    </div>
+  </section>
+
+  <section class="depts" id="reparti" aria-labelledby="h-depts">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 id="h-depts">Ventisei cassetti, uno per reparto.</h2>
+        <p>Il numero sul cartellino è quanti articoli trovi in quel reparto oggi.</p>
+      </div>
+      <div class="cabinet" id="cabinet"></div>
+    </div>
+  </section>
+
+  <section class="best wrap" id="bestseller" aria-labelledby="h-best">
+    <div class="sec-head">
+      <h2 id="h-best">I più venduti dal banco.</h2>
+      <p>Prezzi IVA inclusa (22%). Ordini e quantità si gestiscono sul sito attuale.</p>
+    </div>
+    <div class="shelf" id="shelf"></div>
+    <div class="brands">
+      <img src="https://www.ferroelettra.it/public/webp/t_BannerProdottiHenkel_5e1ca7e5cbfc6a651e1caed06c1c2532.webp" alt="Prodotti Henkel" loading="lazy">
+      <img src="https://www.ferroelettra.it/public/webp/t_BannerProdottiArexons_30cdeb223d7e0f8b2855f3773c4597c8.webp" alt="Prodotti Arexons" loading="lazy">
+      <img src="https://www.ferroelettra.it/public/webp/t_BannerProdottiAmbro-sol_c69ed12774e30d8bcdf67253d1bff94e.webp" alt="Prodotti Ambro-Sol" loading="lazy">
+    </div>
+  </section>
+
+  <section class="help" id="assistenza" aria-labelledby="h-help">
+    <div class="wrap help-grid">
+      <div>
+        <h2 id="h-help">Descrivici il pezzo, lo troviamo noi.</h2>
+        <p>Una foto su WhatsApp spesso basta: misure, attacco, marca. Ti diciamo cosa ordinare.</p>
+        <a class="phone num" href="https://wa.me/390835334712" target="_blank" rel="noopener">0835 334712</a>
+        <p class="num">Dal lunedì al venerdì, 8:00–13:00 e 16:00–20:00</p>
+      </div>
+      <ul class="facts">
+        <li><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg><div><b>Spedizioni rapide e tracciabili</b><span>Express in 1–2 giorni lavorativi</span></div></li>
+        <li><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12a8 8 0 0 1 16 0v5a2 2 0 0 1-2 2h-2v-6h4M4 13h4v6H6a2 2 0 0 1-2-2z"/></svg><div><b>Assistenza pre e post vendita</b><span>Telefono e WhatsApp</span></div></li>
+        <li><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><div><b>Pagamenti sicuri</b><span>Al momento dell’ordine sul sito</span></div></li>
+        <li><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg><div><b>Oltre 30 anni di esperienza</b><span>Il negozio di via Giolitti 55</span></div></li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>FERROELETTRA SAS di Cardinale Angelo e Antonello, Via Giolitti 55, 75100 Matera (MT), P.IVA 01248710772</span>
+    <span><a href="mailto:info@ferroelettra.it">info@ferroelettra.it</a> &emsp; Prototipo di restyling</span>
+  </div>
+</footer>
+
+<script>
+/* ======================= DATI (dalla home di ferroelettra.it) ======================= */
+const SITE = 'https://www.ferroelettra.it/';
+const DEPTS = [
+  ['Ferramenta - Bricolage',2790],['Utensileria Manuale',2180],['Colori - Collanti - Imballaggio',1507],['Materiale Elettrico',1421],
+  ['Giardinaggio - Agricoltura',1120],['Casalinghi',870],['Idraulica - Arredo Bagno',697],['Arredo Giardino - Piscine - Camping',657],
+  ['Maniglie e Serrature',598],['Sicurezza - Casseforti - Serrature - Bike',589],['Utensileria Elettrica',558],['Edilizia',463],
+  ['Pulizia - Tende - Zanzariere - Pet - Linea Auto',377],['Blister Minuteria e Tasselli',309],['Riscaldamento - Clima - Gas',290],
+  ['Segnaletica - Antinfortunistica',263],['Bulloneria - Viteria',246],['Derivati Siderurgici - Reti Metalliche',153],
+  ['Scaffali - Armadi - Scarpiere - Porte - Sedie',93],['Targette per incisore',81],['Scale - Ponteggi - Carrelli - Carriole',63],
+  ['Pistone',53],['Saldatura',50],['Aria compressa',41],['Ricambi',12],['Articoli Vari',4],
+];
+const W = 'https://www.ferroelettra.it/public/webp/';
+const BEST = [
+  ['Ferma finestra GUMMY, fermaporta profumato, colori assortiti',2.55,'1494575_8af9002532d6a28340849791536bb6ca.webp'],
+  ['Asta appendiabiti estensibile 80/150 cm cromata La Briantina',6.35,'1510093_2b79319bd93f35dd34b69509d939fdb1.webp'],
+  ['Damigiana in vetro 5 litri con cesto in plastica',4.05,'1538018_ac88935d1bf8bb1f07730ee5000f8133.webp'],
+  ['Kit maniglie basculanti',5.00,'1490058_51a03ca7e628cc66c687bdafed320e75.webp'],
+  ['Alza immondizia in lamiera con manico in acciaio zincato',4.85,'1515377_f52a72ad75f13681584dbda7285138c8.webp'],
+  ['Telo vetro sintetico trasparente, PVC 0,50 mm, 100 cm × 1 m',8.85,'1500083_f5e2fa9412d2a6fba43c54d81a8e051a.webp'],
+  ['Vetro sintetico in rotolo 100×100 cm, spessore 0,25 mm',4.30,'1499047_69d57f609d562dc3ca5e43edfad22a43.webp'],
+  ['Pannello isolante termoriflettente Geko Reflex 70×100 cm',6.35,'1366790_a6838629fbdf65bfadf5f7d87eb07a2c.webp'],
+  ['Cerniera Ferrari ala A, con basetta',4.00,'1520422_47d5377918a09dc8c30b6131945e7a8f.webp'],
+  ['Zigzag Magnatela Specialist, 600 ml',7.70,'1515385_c59fd81a1d1ef5281d18e4d06aad5429.webp'],
+  ['Asta armadio telescopica cromata, fino a 150 cm',4.45,'1524218_88dde1eb0378d5fc77acc4dc3bb0afec.webp'],
+  ['Fornellone a gas Maurer in acciaio 30×30×14 cm',13.85,'1375814_33906633da7fba3f5bf2a78752d891fc.webp'],
+  ['Pannello portautensili blu 98×46 cm',14.25,'1515389_364d219fc178cc34eeb94f6ac7469b2b.webp'],
+  ['Feltro assorbente antiscivolo per imbiancatura, 25×1 m',12.60,'1521006_e6f285361e4916854d1e577303f62a7c.webp'],
+  ['Cerniera per anta Salice 165°, 35 mm',5.65,'1496119_16f40356376a61824645300baa325085.webp'],
+  ['Zanzariera a telaio estensibile grigia 75×100 Maurer',14.00,'1361946_13e3b128bbce6cab3e59ca7d05e393dc.webp'],
+  ['Vetro sintetico in rotolo 100×100 cm, spessore 0,75 mm',9.30,'1499027_97906fe6d11b1c5fd4f9b9cce2f4e3c1.webp'],
+  ['Adesivo universale Bostik Superchiaro 15 g',4.45,'1527474_3bab5dcbcd3db0e28008dfc21b95fc0e.webp'],
+  ['Cerniera ammortizzata 110°, collo 0',4.85,'1504485_5ba33fa2f193efa53fa2d716cc249c54.webp'],
+  ['Prefiltro a sacco per aspiracenere',3.60,'1444954_af90446cc040e640dcd347a2540e69df.webp'],
+];
+const eur = v => v.toLocaleString('it-IT', {minimumFractionDigits:2}) + ' €';
+const tot = DEPTS.reduce((a, d) => a + d[1], 0);
+document.getElementById('totArt').textContent = tot.toLocaleString('it-IT');
+
+document.getElementById('cabinet').innerHTML = DEPTS.map(([n, c], i) => `
+  <a class="drawer${i < 4 ? ' big' : ''}" href="${SITE}prodotti" target="_blank" rel="noopener">
+    <span class="card">${n.replace(/ - /g, ', ')}<span class="num">${c.toLocaleString('it-IT')} articoli</span></span>
+    <span class="pull" aria-hidden="true"></span>
+  </a>`).join('');
+document.getElementById('shelf').innerHTML = BEST.map(([n, p, img]) => `
+  <article class="item">
+    <div class="ph"><img src="${W + img}" alt="${n}" loading="lazy" width="150" height="150" data-i="${BEST.findIndex(b => b[0] === n)}" onerror="this.dataset.failed=1; window.feFallback && feFallback(this)"><span class="tag num">${eur(p)}</span></div>
+    <h3>${n}</h3>
+    <span class="vat">IVA inclusa</span>
+    <a class="go" href="${SITE}" target="_blank" rel="noopener">Ordina sul sito</a>
+  </article>`).join('');
+</script>
+
+<script type="module">
+/* =========================================================================
+   La vite che si avvita: Three.js guidato dallo scroll.
+   - geometria: testa e dado esagonali estrusi (Shape con foro), filetto come
+     TubeGeometry lungo un'elica, rondella ad anello, minuteria di sfondo istanziata
+   - materiali: acciaio zincato con mappa di rugosità spazzolata, dado con
+     zincatura gialla (iridescence), pavimento con carta millimetrata in shader
+   - luci: ambiente RoomEnvironment per i riflessi del metallo, luce chiave calda
+     e controluce blu del marchio
+   - animazione: il dado sale e ruota secondo il passo reale del filetto
+   - post: profondità di campo (Bokeh), bloom leggero, grading, OutputPass
+   - prestazioni: InstancedMesh, MSAA nel composer, niente lavoro fuori schermo,
+     profondità di campo spenta sui telefoni, shader compilati prima del primo frame
+   ========================================================================= */
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const mobile = innerWidth < 1000;
+const canvas = document.getElementById('bolt3d');
+let renderer;
+try { renderer = new THREE.WebGLRenderer({canvas, antialias: false, powerPreference: 'high-performance'}); }
+catch (e){ canvas.insertAdjacentHTML('afterend', '<p class="no3d">La vista 3D non è disponibile su questo dispositivo.</p>'); throw e; }
+renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.5 : 1.75));
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1;
+
+const BG = new THREE.Color('#e9e8e4');
+const scene = new THREE.Scene();
+scene.background = BG; scene.fog = new THREE.Fog(BG, 16, 34);
+const pmrem = new THREE.PMREMGenerator(renderer); const room = new RoomEnvironment();
+scene.environment = pmrem.fromScene(room, .03).texture; scene.environmentIntensity = 1; room.dispose(); pmrem.dispose();
+const camera = new THREE.PerspectiveCamera(mobile ? 40 : 32, 1, .1, 80);
+camera.position.set(0, 9, 26);   // all'apertura la camera arriva da lontano
+
+/* ---------- texture: acciaio spazzolato (rugosità, dato scalare) ---------- */
+function brushed(){
+  const s = 512, c = document.createElement('canvas'); c.width = c.height = s; const g = c.getContext('2d');
+  g.fillStyle = 'rgb(110,110,110)'; g.fillRect(0, 0, s, s);
+  for (let i = 0; i < 1600; i++){ const v = 80 + Math.random() * 90; g.strokeStyle = `rgba(${v},${v},${v},.35)`; g.lineWidth = Math.random() * 1.5; const y = Math.random() * s; g.beginPath(); g.moveTo(0, y); g.lineTo(s, y + (Math.random() - .5) * 4); g.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, 3); return t;
+}
+const rough = brushed();
+const zinc = new THREE.MeshStandardMaterial({color: '#cfd5da', metalness: 1, roughness: .38, roughnessMap: rough});
+// zincatura gialla: la passivazione dà quei riflessi arcobaleno, resi con l'iridescenza
+const yellowZinc = new THREE.MeshPhysicalMaterial({color: '#d6bd73', metalness: 1, roughness: .3, iridescence: .45, iridescenceIOR: 1.4, iridescenceThicknessRange: [260, 420]});
+
+/* ---------- geometria ---------- */
+const hexShape = (r, hole) => {
+  const s = new THREE.Shape();
+  for (let i = 0; i < 6; i++){ const a = i / 6 * Math.PI * 2 + Math.PI / 6; i ? s.lineTo(Math.cos(a) * r, Math.sin(a) * r) : s.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
+  s.closePath();
+  if (hole){ const h = new THREE.Path(); h.absarc(0, 0, hole, 0, Math.PI * 2, true); s.holes.push(h); }
+  return s;
+};
+const extrudeY = (shape, depth, bevel) => {
+  const g = new THREE.ExtrudeGeometry(shape, {depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 3, curveSegments: 48});
+  g.rotateX(-Math.PI / 2); g.translate(0, 0, 0); g.computeVertexNormals(); return g;   // spessore lungo +Y
+};
+const PITCH = .25, SHANK_R = .5, SHANK_L = 4.2;
+const bolt = new THREE.Group();
+const head = new THREE.Mesh(extrudeY(hexShape(1.05), .5, .07), zinc); head.position.y = SHANK_L;
+const shank = new THREE.Mesh(new THREE.CylinderGeometry(SHANK_R - .05, SHANK_R - .05, SHANK_L, 48).translate(0, SHANK_L / 2, 0), zinc);
+// filetto vero: un cilindro fitto deformato con il profilo triangolare che sale a elica (passo PITCH)
+const THREAD_L = SHANK_L - .45;
+const threadGeo = (() => {
+  const g = new THREE.CylinderGeometry(1, 1, THREAD_L, 96, Math.round(THREAD_L / PITCH * 14), true), pos = g.attributes.position;
+  const core = SHANK_R - .07, depth = .11;
+  for (let i = 0; i < pos.count; i++){
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i), th = Math.atan2(z, x);
+    const phase = ((y + th / (Math.PI * 2) * PITCH) / PITCH % 1 + 1) % 1;
+    const r = core + depth * (1 - Math.abs(phase * 2 - 1));   // profilo a V
+    pos.setXYZ(i, Math.cos(th) * r, y, Math.sin(th) * r);
+  }
+  g.computeVertexNormals(); return g.translate(0, THREAD_L / 2 + .02, 0);
+})();
+const thread = new THREE.Mesh(threadGeo, zinc);
+const tip = new THREE.Mesh(new THREE.ConeGeometry(SHANK_R - .05, .18, 48).rotateX(Math.PI).translate(0, -.08, 0), zinc);
+bolt.add(head, shank, thread, tip);
+// marcatura sulla testa: "8.8", come sulle viti vere, incisa su una texture
+{
+  const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
+  g.fillStyle = '#000'; g.fillRect(0, 0, 256, 256); g.fillStyle = '#fff'; g.font = '700 64px "IBM Plex Sans Condensed", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText('8.8', 128, 92); g.font = '600 34px "IBM Plex Sans Condensed", sans-serif'; g.fillText('FE', 128, 160);
+  const t = new THREE.CanvasTexture(c);
+  const mark = new THREE.Mesh(new THREE.CircleGeometry(.7, 48), new THREE.MeshStandardMaterial({color: '#9aa2aa', metalness: 1, roughness: .55, alphaMap: t, transparent: true, depthWrite: false}));
+  mark.rotation.x = -Math.PI / 2; mark.position.y = SHANK_L + .575; bolt.add(mark);
+}
+const nut = new THREE.Mesh(extrudeY(hexShape(.98, SHANK_R + .06), .55, .06), yellowZinc);
+const washer = new THREE.Mesh(extrudeY((() => { const s = new THREE.Shape(); s.absarc(0, 0, 1.25, 0, Math.PI * 2, false); const h = new THREE.Path(); h.absarc(0, 0, SHANK_R + .08, 0, Math.PI * 2, true); s.holes.push(h); return s; })(), .1, .015), zinc);
+const rig = new THREE.Group(); rig.add(bolt, nut, washer);
+rig.rotation.z = -.12; rig.position.set(0, -.6, 0);
+scene.add(rig);
+
+/* ---------- minuteria di sfondo, istanziata ---------- */
+const N = mobile ? 50 : 130;
+const smallGeos = [
+  extrudeY(hexShape(.34, .18), .2, .02),
+  extrudeY((() => { const s = new THREE.Shape(); s.absarc(0, 0, .42, 0, Math.PI * 2, false); const h = new THREE.Path(); h.absarc(0, 0, .19, 0, Math.PI * 2, true); s.holes.push(h); return s; })(), .05, .008),
+  (() => { const g = new THREE.CylinderGeometry(.1, .1, 1.1, 16).translate(0, -.55, 0); const h = new THREE.CylinderGeometry(.24, .24, .12, 24).translate(0, .06, 0); const tp = new THREE.ConeGeometry(.1, .2, 16).rotateX(Math.PI).translate(0, -1.2, 0);
+     const merged = new THREE.BufferGeometry(); const parts = [g, h, tp].map(x => x.toNonIndexed());
+     const pos = []; const nor = []; parts.forEach(p => { pos.push(...p.attributes.position.array); nor.push(...p.attributes.normal.array); });
+     merged.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); merged.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); return merged; })(),
+];
+const smallMats = [zinc, zinc, new THREE.MeshStandardMaterial({color: '#b88a4a', metalness: 1, roughness: .35})]; // dadi, rondelle, viti in ottone
+const bits = smallGeos.map((g, k) => {
+  const n = Math.round(N / 3), m = new THREE.InstancedMesh(g, smallMats[k], n);
+  m.userData.items = Array.from({length: n}, () => ({
+    p: new THREE.Vector3((Math.random() - .5) * 30, Math.random() * 14 - 3, -4 - Math.random() * 14),
+    r: new THREE.Euler(Math.random() * 6, Math.random() * 6, Math.random() * 6),
+    w: new THREE.Vector3((Math.random() - .5) * .4, (Math.random() - .5) * .4, (Math.random() - .5) * .4),
+    s: .7 + Math.random() * .8,
+  }));
+  m.frustumCulled = false; scene.add(m); return m;
+});
+const dummy = new THREE.Object3D();
+function updateBits(t, lift){
+  for (const m of bits){
+    m.userData.items.forEach((it, i) => {
+      dummy.position.set(it.p.x, it.p.y + Math.sin(t * .4 + i) * .15 + lift * (1 + it.p.z * -.05), it.p.z);
+      dummy.rotation.set(it.r.x + t * it.w.x, it.r.y + t * it.w.y, it.r.z + t * it.w.z);
+      dummy.scale.setScalar(it.s); dummy.updateMatrix(); m.setMatrixAt(i, dummy.matrix);
+    });
+    m.instanceMatrix.needsUpdate = true;
+  }
+}
+
+/* ---------- pavimento: carta millimetrata disegnata nello shader ---------- */
+const grid = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false,
+  uniforms: {uInk: {value: new THREE.Color('#15181c')}, uBlue: {value: new THREE.Color('#1f4e9c')}, uCenter: {value: new THREE.Vector2(rig.position.x, 0)}},
+  vertexShader: /* glsl */`varying vec2 vP; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vP = w.xz; gl_Position = projectionMatrix * viewMatrix * w; }`,
+  fragmentShader: /* glsl */`
+    uniform vec3 uInk; uniform vec3 uBlue; uniform vec2 uCenter; varying vec2 vP;
+    float line(float v, float w){ float d = abs(fract(v - 0.5) - 0.5) / fwidth(v); return 1.0 - min(d / w, 1.0); }
+    void main(){
+      float mm = max(line(vP.x * 10.0, 1.0), line(vP.y * 10.0, 1.0)) * 0.10;   // millimetri
+      float cm = max(line(vP.x, 1.2), line(vP.y, 1.2)) * 0.35;                    // centimetri
+      float fade = 1.0 - smoothstep(3.0, 16.0, distance(vP, uCenter));
+      float a = max(mm, cm) * fade;
+      vec3 col = mix(uInk, uBlue, cm > mm ? 0.6 : 0.0);
+      gl_FragColor = vec4(col, a * 0.55);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }`,
+}));
+grid.rotation.x = -Math.PI / 2; grid.position.y = -1.6; scene.add(grid);
+// ombra di contatto sotto la vite
+{
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(21,24,28,.35)'); gr.addColorStop(1, 'rgba(21,24,28,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const blob = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 4.2), new THREE.MeshBasicMaterial({map: t, transparent: true, depthWrite: false, toneMapped: false}));
+  blob.rotation.x = -Math.PI / 2; blob.position.set(rig.position.x, -1.59, 0); scene.add(blob);
+}
+
+/* ---------- luci ---------- */
+const key = new THREE.DirectionalLight('#fff1dc', 2.4); key.position.set(-4, 7, 6);
+const rim = new THREE.DirectionalLight('#5b8fe6', 3); rim.position.set(6, 3, -6);   // controluce nel blu del marchio
+const click = new THREE.PointLight('#ffe7a3', 0, 6, 2); click.position.set(rig.position.x, 3.2, 1.6);
+scene.add(key, rim, click, new THREE.HemisphereLight('#ffffff', '#b9b4aa', .4));
+
+/* ---------- post-processing ---------- */
+const rt = new THREE.WebGLRenderTarget(1, 1, {type: THREE.HalfFloatType, samples: 4});
+const composer = new EffectComposer(renderer, rt);
+composer.addPass(new RenderPass(scene, camera));
+const bokeh = new BokehPass(scene, camera, {focus: 9, aperture: .0016, maxblur: .007});
+bokeh.enabled = !mobile;   // sui telefoni la profondità di campo costa troppo
+composer.addPass(bokeh);
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(512, 512), .18, .5, .92));
+const uTime = {value: 0};
+composer.addPass(new ShaderPass({
+  uniforms: {tDiffuse: {value: null}, uTime},
+  vertexShader: /* glsl */`varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse; uniform float uTime; varying vec2 vUv;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    void main(){
+      vec4 c = texture2D(tDiffuse, vUv);
+      float v = smoothstep(1.05, .35, length(vUv - .5));
+      c.rgb *= mix(.82, 1.0, v);
+      c.rgb += (hash(vUv * 900.0 + fract(uTime)) - .5) * .018;
+      gl_FragColor = c;
+    }`,
+}));
+composer.addPass(new OutputPass());
+
+/* ---------- dimensioni e visibilità ---------- */
+const pin = document.querySelector('.run-pin'), run = document.getElementById('vite');
+function resize(){
+  const w = pin.clientWidth, h = pin.clientHeight;
+  renderer.setSize(w, h, false); composer.setSize(w, h);
+  camera.aspect = w / h;
+  // su schermi larghi sposto l'inquadratura: la vite finisce a destra, il testo resta libero a sinistra
+  if (w > 1000) camera.setViewOffset(w, h, -w * .2, 0, w, h); else camera.clearViewOffset();
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+let visible = true;
+new IntersectionObserver(([e]) => visible = e.isIntersecting).observe(run);
+
+/* ---------- scroll e puntatore ---------- */
+let target = 0, cur = 0;
+const readScroll = () => { const span = run.offsetHeight - innerHeight; target = THREE.MathUtils.clamp(-run.getBoundingClientRect().top / span, 0, 1); };
+addEventListener('scroll', readScroll, {passive: true}); readScroll();
+const mouse = new THREE.Vector2(), look = new THREE.Vector2();
+addEventListener('pointermove', e => mouse.set(e.clientX / innerWidth - .5, e.clientY / innerHeight - .5), {passive: true});
+
+const steps = [...document.querySelectorAll('.step')], mmEl = document.getElementById('mm'), ruler = document.querySelector('.ruler');
+const smooth = x => x * x * (3 - 2 * x);
+const seg = (p, a, b) => smooth(THREE.MathUtils.clamp((p - a) / (b - a), 0, 1));
+const NUT_TOP = SHANK_L - .12 - .55, NUT_START = -2.4;   // finisce sotto la rondella
+const WASHER_TOP = SHANK_L - .12, WASHER_START = -1.4;
+const center = new THREE.Vector3(), camGoal = new THREE.Vector3();
+let lastStep = 0, last = performance.now(), t = 0, clicked = false;
+
+/* ---------- ripiego per le foto che non arrivano: illustrazione 3D del prodotto ---------- */
+// un secondo renderer piccolo, usato solo se una foto del sito non si carica
+let shot = null;
+function packshot(name){
+  if (!shot){
+    const c = document.createElement('canvas'); c.width = c.height = 400;
+    const r = new THREE.WebGLRenderer({canvas: c, antialias: true, preserveDrawingBuffer: true});
+    r.setSize(400, 400, false); r.toneMapping = THREE.ACESFilmicToneMapping;
+    const s = new THREE.Scene(); s.background = new THREE.Color('#ffffff');
+    const pm = new THREE.PMREMGenerator(r); const rm = new RoomEnvironment(); s.environment = pm.fromScene(rm, .04).texture; rm.dispose(); pm.dispose();
+    const k = new THREE.DirectionalLight('#fff', 2); k.position.set(-3, 5, 4); s.add(k);
+    shot = {r, s, c, cam: new THREE.PerspectiveCamera(26, 1, .1, 50)};
+  }
+  const n = name.toLowerCase(), grp = new THREE.Group(), disposables = [];
+  const keep = x => (disposables.push(x), x);
+  // etichetta: fascia blu del marchio e nome del prodotto
+  const label = (w, h) => {
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h; const g = cv.getContext('2d');
+    g.fillStyle = '#fffdf4'; g.fillRect(0, 0, w, h); g.fillStyle = '#1f4e9c'; g.fillRect(0, 0, w, h * .2);
+    g.fillStyle = '#fff'; g.font = `700 ${h * .12}px "IBM Plex Sans Condensed", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('FERROELETTRA', w / 2, h * .1);
+    g.fillStyle = '#15181c'; let fs = h * .13; const words = name.split(' '); let lines;
+    do { g.font = `600 ${fs}px "IBM Plex Sans Condensed", sans-serif`; lines = []; let l = '';
+      for (const wd of words){ const t2 = l ? l + ' ' + wd : wd; if (g.measureText(t2).width > w * .82 && l){ lines.push(l); l = wd; } else l = t2; } lines.push(l); fs *= .9;
+    } while (lines.length * fs * 1.25 > h * .7 && fs > 8);
+    lines.forEach((l, i) => g.fillText(l, w / 2, h * .25 + (h * .75) / 2 + (i - (lines.length - 1) / 2) * fs * 1.2));
+    const t = keep(new THREE.CanvasTexture(cv)); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return keep(new THREE.MeshStandardMaterial({map: t, roughness: .8}));
+  };
+  const add = (geo, mat) => { const m = new THREE.Mesh(keep(geo), mat); grp.add(m); return m; };
+  const steel = keep(new THREE.MeshStandardMaterial({color: '#d4d9de', metalness: 1, roughness: .25}));
+  if (/vetro sintetico|telo|feltro/.test(n)){
+    const roll = keep(new THREE.MeshPhysicalMaterial({color: /feltro/.test(n) ? '#e8e2d4' : '#dfe9ee', roughness: /feltro/.test(n) ? .95 : .1, transparent: !/feltro/.test(n), opacity: .85, clearcoat: /feltro/.test(n) ? 0 : 1}));
+    add(new THREE.CylinderGeometry(.55, .55, 2, 48).rotateZ(Math.PI / 2), roll);
+    add(new THREE.CylinderGeometry(.16, .16, 2.04, 24).rotateZ(Math.PI / 2), keep(new THREE.MeshStandardMaterial({color: '#b08a5c', roughness: .9})));
+    const tag = add(new THREE.PlaneGeometry(1.1, .62), label(560, 320)); tag.position.set(0, 0, .56);
+  } else if (/zigzag|bostik|adesivo/.test(n)){
+    add(new THREE.CylinderGeometry(.42, .42, 1.5, 48), label(820, 760));
+    add(new THREE.CylinderGeometry(.2, .3, .3, 32).translate(0, .9, 0), keep(new THREE.MeshStandardMaterial({color: '#f2c230', roughness: .4})));
+  } else if (/damigiana/.test(n)){
+    add(new THREE.LatheGeometry([[0,0],[.75,0],[.85,.4],[.85,1.1],[.5,1.5],[.2,1.65],[.2,1.9],[0,1.9]].map(([x, y]) => new THREE.Vector2(x, y)), 48).translate(0, -.95, 0),
+      keep(new THREE.MeshPhysicalMaterial({color: '#e6f2ea', roughness: .05, transparent: true, opacity: .45, clearcoat: 1})));
+    add(new THREE.CylinderGeometry(.9, .8, .8, 24, 1, true).translate(0, -.55, 0), keep(new THREE.MeshStandardMaterial({color: '#f2c230', roughness: .6, side: THREE.DoubleSide, wireframe: true})));
+    add(new THREE.CylinderGeometry(.23, .23, .2, 24).translate(0, 1.0, 0), keep(new THREE.MeshStandardMaterial({color: '#f2c230', roughness: .5})));
+  } else if (/asta/.test(n)){
+    add(new THREE.CylinderGeometry(.09, .09, 2.6, 24).rotateZ(Math.PI / 2).rotateY(.5), steel);
+    add(new THREE.CylinderGeometry(.11, .11, 1.1, 24).rotateZ(Math.PI / 2).rotateY(.5).translate(.55, 0, -.28), steel);
+    const tag = add(new THREE.PlaneGeometry(1.2, .7), label(560, 330)); tag.position.set(-.2, -.55, .3);
+  } else if (/cerniera/.test(n)){
+    add(new THREE.CylinderGeometry(.45, .45, .25, 40).translate(-.6, 0, 0), steel);
+    add(new THREE.BoxGeometry(1.6, .12, .45).translate(.4, .13, 0), steel);
+    add(new THREE.BoxGeometry(.9, .1, .7).translate(1.1, -.1, 0), steel);
+    grp.rotation.set(.9, -.3, 0);
+  } else if (/zanzariera|pannello|maniglie|fornellone|alza|ferma|prefiltro/.test(n)){
+    add(new THREE.BoxGeometry(1.3, 1.7, .12), [steel, steel, steel, steel, label(600, 780), steel]);
+  } else {
+    const card = keep(new THREE.MeshStandardMaterial({color: '#c8a77a', roughness: .9}));
+    add(new THREE.BoxGeometry(1.3, 1.3, .9), [card, card, card, card, label(600, 600), card]);
+  }
+  grp.rotation.y += -.35;
+  shot.s.add(grp);
+  const box = new THREE.Box3().setFromObject(grp), size = box.getSize(new THREE.Vector3()), ctr = box.getCenter(new THREE.Vector3());
+  const d = Math.max(size.x, size.y) / (2 * Math.tan(THREE.MathUtils.degToRad(13))) * 1.25 + size.z;
+  shot.cam.position.set(ctr.x + d * .15, ctr.y + d * .2, ctr.z + d); shot.cam.lookAt(ctr);
+  shot.r.render(shot.s, shot.cam);
+  const url = shot.c.toDataURL('image/jpeg', .9);
+  shot.s.remove(grp); disposables.forEach(x => x.dispose && x.dispose());
+  return url;
+}
+window.feFallback = img => { const i = +img.dataset.i; if (i < 0) return; img.dataset.shot = 1; img.src = packshot(BEST[i][0]); };
+// foto già fallite prima che il modulo fosse pronto
+document.querySelectorAll('img[data-failed]').forEach(feFallback);
+window.fe3d = {packshot};
+
+// shader compilati in anticipo: niente scatti al primo fotogramma
+await renderer.compileAsync(scene, camera);
+
+renderer.setAnimationLoop(now => {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (!visible || document.hidden) return;
+  if (!reduce) t += dt; uTime.value = t;
+  cur = reduce ? target : THREE.MathUtils.damp(cur, target, 5, dt);
+
+  // rondella: sale per prima; dado: sale ruotando secondo il passo del filetto
+  const pw = seg(cur, .12, .3), pn = seg(cur, .26, .86);
+  washer.position.y = THREE.MathUtils.lerp(WASHER_START, WASHER_TOP, pw);
+  washer.rotation.y = Math.sin(t * .8) * .05 * (1 - pw);
+  nut.position.y = THREE.MathUtils.lerp(NUT_START, NUT_TOP, pn);
+  nut.rotation.y = -(nut.position.y - NUT_START) / PITCH * Math.PI * 2;
+  // a fine corsa: un lampo di luce, come lo scatto della chiave dinamometrica
+  if (pn >= .999 && !clicked){ clicked = true; click.intensity = 40; }
+  if (pn < .98) clicked = false;
+  click.intensity = THREE.MathUtils.damp(click.intensity, 0, 4, dt);
+
+  // tutta la vite gira piano finché il dado non è stretto
+  rig.rotation.y = (1 - pn) * t * .25 + pn * .4;
+
+  // telecamera in orbita attorno al pezzo
+  look.x = THREE.MathUtils.damp(look.x, mouse.x, 3, dt); look.y = THREE.MathUtils.damp(look.y, mouse.y, 3, dt);
+  center.set(rig.position.x, 1.6 + cur * .6 + (mobile ? 1.6 : 0), 0);
+  const az = .55 - cur * .9 + look.x * .25, el = .18 + cur * .1 - look.y * .1, rad = (mobile ? 15 : 13) - cur * 2;
+  camGoal.set(center.x + Math.sin(az) * rad * Math.cos(el), center.y + Math.sin(el) * rad, Math.cos(az) * rad * Math.cos(el));
+  camera.position.lerp(camGoal, reduce ? 1 : 1 - Math.exp(-4 * dt)); camera.lookAt(center);
+  bokeh.uniforms.focus.value = camera.position.distanceTo(rig.position) + .5;   // a fuoco sulla vite, non sul centro dell'inquadratura
+
+  updateBits(t, cur * 3);
+
+  // testi, righello
+  const st = Math.min(steps.length - 1, Math.floor(cur * steps.length * .999));
+  if (st !== lastStep){ steps[lastStep].classList.remove('on'); steps[st].classList.add('on'); lastStep = st; }
+  const travel = (nut.position.y - NUT_START) * 10;   // 1 unità = 10 mm
+  mmEl.textContent = `${Math.round(travel)} mm`;
+  mmEl.style.top = `${(1 - pn) * 100}%`;
+  ruler.style.opacity = cur > .05 ? .75 : 0;
+
+  composer.render(dt);
+});
+</script>
+</body>
+</html>
